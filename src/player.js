@@ -19,7 +19,7 @@ function Player(position) {
   this.width  = 64;
   this.height = 64;
   this.spritesheet  = new Image();
-  this.spritesheet.src = encodeURI('assets/PlayerSprite2.png');
+  this.spritesheet.src = encodeURI('assets/PlayerSprite0.png');
   this.timer = 0;
   this.frame = 0;
 }
@@ -39,6 +39,56 @@ Player.prototype.update = function(time) {
       }
       break;
     // TODO: Implement your player's update by state
+    case "right":
+      this.timer += time;
+      this.x += 2.1;
+      if(this.timer > MS_PER_FRAME) {
+        this.timer = 0;
+        this.frame += 1;
+        if(this.frame > 3) {
+          this.frame = 0;
+          this.state = "default";
+        }
+      }
+      break;
+    case "left":
+      this.timer += time;
+      this.x -= 2.1;
+      if(this.timer > MS_PER_FRAME) {
+        this.timer = 0;
+        this.frame += 1;
+        if(this.frame > 3) {
+          this.frame = 0;
+          this.state = "default";
+        }
+      }
+      break;
+    case "down":
+      this.timer += time;
+      this.y += 2;
+      if(this.timer > MS_PER_FRAME) {
+        this.timer = 0;
+        this.frame += 1;
+        if(this.frame > 3) {
+          this.frame = 0;
+          this.state = "default";
+        }
+      }
+      break;
+    case "up":
+      this.timer += time;
+      this.y -= 2;
+      if(this.timer > MS_PER_FRAME) {
+        this.timer = 0;
+        this.frame += 1;
+        if(this.frame > 3) {
+          this.frame = 0;
+          this.state = "default";
+        }
+      }
+      break;
+    default:
+      this.state = "idle";
   }
 }
 
@@ -60,5 +110,18 @@ Player.prototype.render = function(time, ctx) {
       );
       break;
     // TODO: Implement your player's redering according to state
+    case "right":
+    case "left":
+    case "down":
+    case "up":
+      ctx.drawImage(
+        //image
+        this.spritesheet,
+        //source rectangle
+        this.frame * 64, 0, this.width, this.height,
+        //destination rectangle
+        this.x, this.y, this.width, this.height
+      );
+      break;
   }
 }

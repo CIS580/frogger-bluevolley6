@@ -4,11 +4,88 @@
 /* Classes */
 const Game = require('./game.js');
 const Player = require('./player.js');
+const Log = require('./log.js');
+const Log2 = require('./log2.js');
+const Car = require('./car.js');
 
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
-var player = new Player({x: 0, y: 240})
+var player = new Player({x: 0, y: 240});
+var background = new Image();
+background.src = 'assets/background.png';
+var log = [];
+var car = [];
+for(var i=0; i < 3; i++) {
+  log.push(new Log({
+    x: 470,
+    y: 100 + 200*i
+  }));
+  log.push(new Log2({
+    x: 550,
+    y: 0 + 150*i
+  }));
+  log.push(new Log({
+    x: 630,
+    y: 100 + 200*i
+  }));
+}
+for(var i=0; i < 2; i++) {
+  car.push(new Car({
+    x: 80,
+    y: 100 + 300*i
+  }));
+  car.push(new Car({
+    x: 160,
+    y: 50 + 350*i
+  }));
+  car.push(new Car({
+    x: 240,
+    y: 150 + 350*i
+  }));
+  car.push(new Car({
+    x: 320,
+    y: 200 + 300*i
+  }));
+}
+window.onkeydown = function(event) {
+  event.preventDefault();
+  console.log(event);
+  switch(event.keyCode) {
+    // RIGHT
+    case 39:
+    case 68:
+      if(player.state == "idle") {
+        player.state = "right";
+        player.frame = -1;
+      }
+      break;
+    // LEFT
+    case 37:
+    case 65:
+      if(player.state == "idle") {
+        player.state = "left";
+        player.frame = -1;
+      }
+      break;
+    // DOWN
+    case 40:
+    case 83:
+      if(player.state == "idle") {
+        player.state = "down";
+        player.frame = -1;
+      }
+      break;
+    // UP
+    case 38:
+    case 87:
+      if(player.state == "idle") {
+        player.state = "up";
+        player.frame = -1;
+      }
+      break;
+  }
+}
 
 /**
  * @function masterLoop
@@ -33,6 +110,9 @@ masterLoop(performance.now());
 function update(elapsedTime) {
   player.update(elapsedTime);
   // TODO: Update the game objects
+  log.forEach(function(log) { log.update();});
+  car.forEach(function(car) { car.update();});
+  checkForCollision();
 }
 
 /**
@@ -43,12 +123,84 @@ function update(elapsedTime) {
   * @param {CanvasRenderingContext2D} ctx the context to render to
   */
 function render(elapsedTime, ctx) {
-  ctx.fillStyle = "lightblue";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+  log.forEach(function(log){log.render(ctx);});
+  car.forEach(function(car){car.render(ctx);});
   player.render(elapsedTime, ctx);
 }
 
-},{"./game.js":2,"./player.js":3}],2:[function(require,module,exports){
+function checkForCollision() {
+  var collides;
+  if(player.x > 70 && player.x < 400) { //in street
+    car.forEach(function(entry) {
+      if (player.x >= car.x && player.x < (car.x + car.width)) {
+        if(player.y >= car.y && player.y < (car.y + car.height)) {
+          collides = true;
+        } else if((player.y + player.height) >= car.y && (player.y + player.height) < (car.y + car.height)) {
+          collides = true;
+        }
+      } else if ((player.x + player.width) >= car.x && (player.x + player.width) < (car.x + car.width)) {
+        if(player.y >= car.y && player.y < (car.y + car.height)) {
+          collides = true;
+        } else if((player.y + player.height) >= car.y && (player.y + player.height) < (car.y + car.height)) {
+          collides = true;
+        }
+      }
+    });
+  }
+  if(collides) {
+    player.x = 0;
+    player.y = 240;
+  }
+}
+
+},{"./car.js":2,"./game.js":3,"./log.js":4,"./log2.js":5,"./player.js":6}],2:[function(require,module,exports){
+/**
+ * @module exports the Car class
+ */
+module.exports = exports = Car;
+
+/**
+ * @constructor Car
+ * Creates a new car object
+ * @param {Postition} position object specifying an x and y
+ */
+function Car(position) {
+  this.x = position.x;
+  this.y = position.y;
+  this.width  = 75;
+  this.height = 100;
+  this.spritesheet  = new Image();
+  this.spritesheet.src ='assets/cars_racer.svg';
+}
+
+/**
+ * @function updates the car object
+ */
+Car.prototype.update = function() {
+  if(this.y < 0) {
+    this.y = 500;
+  } else {
+    this.y -= 1;
+  }
+}
+
+/**
+ * @function renders the car into the provided context
+ * {CanvasRenderingContext2D} ctx the context to render into
+ */
+Car.prototype.render = function(ctx) {
+  ctx.drawImage(
+    //image
+    this.spritesheet,
+    //source rectangle
+    0, 0, 350, 220,
+    //destination rectangle
+    this.x, this.y, this.width, this.height
+  );
+}
+
+},{}],3:[function(require,module,exports){
 "use strict";
 
 /**
@@ -106,7 +258,99 @@ Game.prototype.loop = function(newTime) {
   this.frontCtx.drawImage(this.backBuffer, 0, 0);
 }
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
+/**
+ * @module exports the Log class
+ */
+module.exports = exports = Log;
+
+/**
+ * @constructor Log
+ * Creates a new log object
+ * @param {Postition} position object specifying an x and y
+ */
+function Log(position) {
+  this.x = position.x;
+  this.y = position.y;
+  this.width  = 64;
+  this.height = 115;
+  this.spritesheet  = new Image();
+  this.spritesheet.src ='assets/log.png';
+}
+
+/**
+ * @function updates the log object
+ */
+Log.prototype.update = function() {
+  if(this.y > 480) {
+    this.y = -110;
+  } else {
+    this.y += 1;
+  }
+}
+
+/**
+ * @function renders the log into the provided context
+ * {CanvasRenderingContext2D} ctx the context to render into
+ */
+Log.prototype.render = function(ctx) {
+  ctx.drawImage(
+    //image
+    this.spritesheet,
+    //source rectangle
+    0, 0, this.width, this.height,
+    //destination rectangle
+    this.x, this.y, this.width, this.height
+  );
+}
+
+},{}],5:[function(require,module,exports){
+/**
+ * @module exports the Log class
+ */
+module.exports = exports = Log;
+
+/**
+ * @constructor Log
+ * Creates a new log object
+ * @param {Postition} position object specifying an x and y
+ */
+function Log(position) {
+  this.x = position.x;
+  this.y = position.y;
+  this.width  = 64;
+  this.height = 115;
+  this.spritesheet  = new Image();
+  this.spritesheet.src ='assets/log.png';
+}
+
+/**
+ * @function updates the log object
+ */
+Log.prototype.update = function() {
+  if(this.y < 0) {
+    this.y = 500;
+  } else {
+    this.y -= 1;
+  }
+}
+
+/**
+ * @function renders the log into the provided context
+ * {CanvasRenderingContext2D} ctx the context to render into
+ */
+Log.prototype.render = function(ctx) {
+  ctx.drawImage(
+    //image
+    this.spritesheet,
+    //source rectangle
+    0, 0, this.width, this.height,
+    //destination rectangle
+    this.x, this.y, this.width, this.height
+  );
+}
+
+},{}],6:[function(require,module,exports){
 "use strict";
 
 const MS_PER_FRAME = 1000/8;
@@ -128,7 +372,7 @@ function Player(position) {
   this.width  = 64;
   this.height = 64;
   this.spritesheet  = new Image();
-  this.spritesheet.src = encodeURI('assets/PlayerSprite2.png');
+  this.spritesheet.src = encodeURI('assets/PlayerSprite0.png');
   this.timer = 0;
   this.frame = 0;
 }
@@ -148,6 +392,56 @@ Player.prototype.update = function(time) {
       }
       break;
     // TODO: Implement your player's update by state
+    case "right":
+      this.timer += time;
+      this.x += 2.1;
+      if(this.timer > MS_PER_FRAME) {
+        this.timer = 0;
+        this.frame += 1;
+        if(this.frame > 3) {
+          this.frame = 0;
+          this.state = "default";
+        }
+      }
+      break;
+    case "left":
+      this.timer += time;
+      this.x -= 2.1;
+      if(this.timer > MS_PER_FRAME) {
+        this.timer = 0;
+        this.frame += 1;
+        if(this.frame > 3) {
+          this.frame = 0;
+          this.state = "default";
+        }
+      }
+      break;
+    case "down":
+      this.timer += time;
+      this.y += 2;
+      if(this.timer > MS_PER_FRAME) {
+        this.timer = 0;
+        this.frame += 1;
+        if(this.frame > 3) {
+          this.frame = 0;
+          this.state = "default";
+        }
+      }
+      break;
+    case "up":
+      this.timer += time;
+      this.y -= 2;
+      if(this.timer > MS_PER_FRAME) {
+        this.timer = 0;
+        this.frame += 1;
+        if(this.frame > 3) {
+          this.frame = 0;
+          this.state = "default";
+        }
+      }
+      break;
+    default:
+      this.state = "idle";
   }
 }
 
@@ -169,6 +463,19 @@ Player.prototype.render = function(time, ctx) {
       );
       break;
     // TODO: Implement your player's redering according to state
+    case "right":
+    case "left":
+    case "down":
+    case "up":
+      ctx.drawImage(
+        //image
+        this.spritesheet,
+        //source rectangle
+        this.frame * 64, 0, this.width, this.height,
+        //destination rectangle
+        this.x, this.y, this.width, this.height
+      );
+      break;
   }
 }
 
