@@ -22,6 +22,8 @@ function Player(position) {
   this.spritesheet.src = encodeURI('assets/PlayerSprite0.png');
   this.timer = 0;
   this.frame = 0;
+  this.position = 0;
+  this.score = 0;
 }
 
 /**
@@ -41,54 +43,80 @@ Player.prototype.update = function(time) {
     // TODO: Implement your player's update by state
     case "right":
       this.timer += time;
-      this.x += 2.1;
-      if(this.timer > MS_PER_FRAME) {
-        this.timer = 0;
-        this.frame += 1;
-        if(this.frame > 3) {
-          this.frame = 0;
-          this.state = "default";
+      var temp = this.x + 2.1;
+      if(temp > 760) {
+        this.x = 0;
+        this.y = 240;
+        this.position = 0;
+        this.score += 100;
+        this.frame = 0;
+        this.state = "idle";
+      } else {
+        this.x += 2.1;
+        if(this.timer > MS_PER_FRAME) {
+          this.timer = 0;
+          this.frame += 1;
+          if(this.frame > 3) {
+            this.position++;
+            this.x = 78 * this.position;
+            this.frame = 0;
+            this.state = "idle";
+          }
         }
       }
       break;
     case "left":
       this.timer += time;
-      this.x -= 2.1;
-      if(this.timer > MS_PER_FRAME) {
-        this.timer = 0;
-        this.frame += 1;
-        if(this.frame > 3) {
-          this.frame = 0;
-          this.state = "default";
+      var temp = this.x - 2.1;
+      if(temp < 0) {
+        this.x = 0;
+        this.frame = 0;
+        this.state = "idle";
+        this.position = 0;
+      } else {
+        this.x -= 2.1;
+        if(this.timer > MS_PER_FRAME) {
+          this.timer = 0;
+          this.frame += 1;
+          if(this.frame > 3) {
+            this.position --;
+            this.x = 78 * this.position;
+            this.frame = 0;
+            this.state = "idle";
+          }
         }
       }
       break;
     case "down":
       this.timer += time;
-      this.y += 2;
-      if(this.timer > MS_PER_FRAME) {
-        this.timer = 0;
-        this.frame += 1;
-        if(this.frame > 3) {
-          this.frame = 0;
-          this.state = "default";
+      var temp = this.y + 2;
+      if(temp < 480) {
+        this.y += 2;
+        if(this.timer > MS_PER_FRAME) {
+          this.timer = 0;
+          this.frame += 1;
+          if(this.frame > 3) {
+            this.frame = 0;
+            this.state = "idle";
+          }
         }
       }
       break;
     case "up":
       this.timer += time;
-      this.y -= 2;
-      if(this.timer > MS_PER_FRAME) {
-        this.timer = 0;
-        this.frame += 1;
-        if(this.frame > 3) {
-          this.frame = 0;
-          this.state = "default";
+      var temp = this.y - 2;
+      if(temp > 0) {
+        this.y -= 2;
+        if(this.timer > MS_PER_FRAME) {
+          this.timer = 0;
+          this.frame += 1;
+          if(this.frame > 3) {
+            this.frame = 0;
+            this.state = "idle";
+          }
         }
       }
       break;
-    default:
-      this.state = "idle";
   }
 }
 
@@ -104,7 +132,7 @@ Player.prototype.render = function(time, ctx) {
         // image
         this.spritesheet,
         // source rectangle
-        this.frame * 64, 64, this.width, this.height,
+        this.frame * 64, 70, 64, 64,
         // destination rectangle
         this.x, this.y, this.width, this.height
       );
@@ -118,7 +146,7 @@ Player.prototype.render = function(time, ctx) {
         //image
         this.spritesheet,
         //source rectangle
-        this.frame * 64, 0, this.width, this.height,
+        this.frame * 64, 0, 64, 64,
         //destination rectangle
         this.x, this.y, this.width, this.height
       );

@@ -14,40 +14,44 @@ var game = new Game(canvas, update, render);
 var player = new Player({x: 0, y: 240});
 var background = new Image();
 background.src = 'assets/background.png';
+var lives = 3;
 var log = [];
 var car = [];
 for(var i=0; i < 3; i++) {
   log.push(new Log({
-    x: 470,
-    y: 100 + 200*i
+    x: 460,
+    y: 100 + 250*i
   }));
   log.push(new Log2({
-    x: 550,
+    x: 540,
     y: 0 + 150*i
   }));
   log.push(new Log({
-    x: 630,
+    x: 620,
     y: 100 + 200*i
   }));
 }
 for(var i=0; i < 2; i++) {
   car.push(new Car({
     x: 80,
-    y: 100 + 300*i
-  }));
-  car.push(new Car({
-    x: 160,
-    y: 50 + 350*i
+    y: 0 + 320*i
   }));
   car.push(new Car({
     x: 240,
-    y: 150 + 350*i
-  }));
-  car.push(new Car({
-    x: 320,
-    y: 200 + 300*i
+    y: 0 + 320*i
   }));
 }
+
+car.push(new Car({
+  x: 160,
+  y: 250
+}));
+
+car.push(new Car({
+  x: 315,
+  y: 300
+}));
+
 window.onkeydown = function(event) {
   event.preventDefault();
   console.log(event);
@@ -112,7 +116,28 @@ function update(elapsedTime) {
   // TODO: Update the game objects
   log.forEach(function(log) { log.update();});
   car.forEach(function(car) { car.update();});
-  checkForCollision();
+  for(var i = 0; i < car.length; i ++){
+    car[i].speed = player.score/100;
+  }
+  for(var i = 0; i < log.length; i++){
+    log[i].speed = player.score/100;
+  }
+  if(player.x > 70 && player.x < 375) {
+    car.forEach(checkForCarCrash);
+  } else if (player.x > 455 && player.x < 680) {
+    var onLog = log.some(checkOnLog);
+    if(!onLog) {
+      player.x = 0;
+      player.y = 240;
+      player.frame = 0;
+      player.state = "idle";
+      player.position = 0;
+      lives --;
+      if(lives == 0) {
+        game.gameOver = true;
+      }
+    }
+  }
 }
 
 /**
@@ -127,31 +152,43 @@ function render(elapsedTime, ctx) {
   log.forEach(function(log){log.render(ctx);});
   car.forEach(function(car){car.render(ctx);});
   player.render(elapsedTime, ctx);
+  ctx.fillStyle = "yellow";
+  ctx.font = "bold 16px Arial";
+  ctx.fillText("Score: " + player.score, 0, 15);
+  ctx.fillStyle = "yellow";
+  ctx.font = "bold 16px Arial";
+  ctx.fillText("Lives: " + lives, 1, 30);
+  if(game.gameOver) {
+      ctx.fillStyle = "red";
+      ctx.font = "bold 32px Arial";
+      ctx.fillText("Game Over", 760/2 - 90, 480/2);
+  }
 }
 
-function checkForCollision() {
-  var collides;
-  if(player.x > 70 && player.x < 400) { //in street
-    car.forEach(function(entry) {
-      if (player.x >= car.x && player.x < (car.x + car.width)) {
-        if(player.y >= car.y && player.y < (car.y + car.height)) {
-          collides = true;
-        } else if((player.y + player.height) >= car.y && (player.y + player.height) < (car.y + car.height)) {
-          collides = true;
-        }
-      } else if ((player.x + player.width) >= car.x && (player.x + player.width) < (car.x + car.width)) {
-        if(player.y >= car.y && player.y < (car.y + car.height)) {
-          collides = true;
-        } else if((player.y + player.height) >= car.y && (player.y + player.height) < (car.y + car.height)) {
-          collides = true;
-        }
-      }
-    });
-  }
+function checkForCarCrash(car) {
+  var collides = !(player.x + player.width < car.x ||
+                  player.x > car.x + car.width ||
+                  player.y + player.height < car.y ||
+                  player.y > car.y + car.height);
   if(collides) {
     player.x = 0;
     player.y = 240;
+    player.frame = 0;
+    player.state = "idle";
+    player.position = 0;
+    lives --;
+    if(lives == 0) {
+      game.gameOver = true;
+    }
   }
+}
+
+function checkOnLog(log) {
+  var collides = !(player.x + player.width < log.x ||
+                  player.x > log.x + log.width ||
+                  player.y + player.height < log.y ||
+                  player.y > log.y + log.height);
+  return collides;
 }
 
 },{"./car.js":2,"./game.js":3,"./log.js":4,"./log2.js":5,"./player.js":6}],2:[function(require,module,exports){
@@ -168,10 +205,11 @@ module.exports = exports = Car;
 function Car(position) {
   this.x = position.x;
   this.y = position.y;
-  this.width  = 75;
-  this.height = 100;
+  this.width  = 60;
+  this.height = 80;
   this.spritesheet  = new Image();
   this.spritesheet.src ='assets/cars_racer.svg';
+  this.speed = 0;
 }
 
 /**
@@ -181,7 +219,7 @@ Car.prototype.update = function() {
   if(this.y < 0) {
     this.y = 500;
   } else {
-    this.y -= 1;
+    this.y -= (1 + this.speed);
   }
 }
 
@@ -194,7 +232,7 @@ Car.prototype.render = function(ctx) {
     //image
     this.spritesheet,
     //source rectangle
-    0, 0, 350, 220,
+    0, 0, 220, 450,
     //destination rectangle
     this.x, this.y, this.width, this.height
   );
@@ -230,6 +268,7 @@ function Game(screen, updateFunction, renderFunction) {
   // Start the game loop
   this.oldTime = performance.now();
   this.paused = false;
+  this.gameOver = false;
 }
 
 /**
@@ -248,14 +287,16 @@ Game.prototype.pause = function(flag) {
  */
 Game.prototype.loop = function(newTime) {
   var game = this;
-  var elapsedTime = newTime - this.oldTime;
-  this.oldTime = newTime;
+  if(this.gameOver == false) {
+    var elapsedTime = newTime - this.oldTime;
+    this.oldTime = newTime;
 
-  if(!this.paused) this.update(elapsedTime);
-  this.render(elapsedTime, this.frontCtx);
+    if(!this.paused) this.update(elapsedTime);
+    this.render(elapsedTime, this.frontCtx);
 
-  // Flip the back buffer
-  this.frontCtx.drawImage(this.backBuffer, 0, 0);
+    // Flip the back buffer
+    this.frontCtx.drawImage(this.backBuffer, 0, 0);
+  }
 }
 
 },{}],4:[function(require,module,exports){
@@ -276,6 +317,7 @@ function Log(position) {
   this.height = 115;
   this.spritesheet  = new Image();
   this.spritesheet.src ='assets/log.png';
+  this.speed = 0;
 }
 
 /**
@@ -285,7 +327,7 @@ Log.prototype.update = function() {
   if(this.y > 480) {
     this.y = -110;
   } else {
-    this.y += 1;
+    this.y += (1 + this.speed);
   }
 }
 
@@ -298,7 +340,7 @@ Log.prototype.render = function(ctx) {
     //image
     this.spritesheet,
     //source rectangle
-    0, 0, this.width, this.height,
+    0, 0, 40, 115,
     //destination rectangle
     this.x, this.y, this.width, this.height
   );
@@ -322,6 +364,7 @@ function Log(position) {
   this.height = 115;
   this.spritesheet  = new Image();
   this.spritesheet.src ='assets/log.png';
+  this.speed = 0;
 }
 
 /**
@@ -331,7 +374,7 @@ Log.prototype.update = function() {
   if(this.y < 0) {
     this.y = 500;
   } else {
-    this.y -= 1;
+    this.y -= (1 + this.speed);
   }
 }
 
@@ -344,7 +387,7 @@ Log.prototype.render = function(ctx) {
     //image
     this.spritesheet,
     //source rectangle
-    0, 0, this.width, this.height,
+    0, 0, 40, 115,
     //destination rectangle
     this.x, this.y, this.width, this.height
   );
@@ -375,6 +418,8 @@ function Player(position) {
   this.spritesheet.src = encodeURI('assets/PlayerSprite0.png');
   this.timer = 0;
   this.frame = 0;
+  this.position = 0;
+  this.score = 0;
 }
 
 /**
@@ -394,54 +439,80 @@ Player.prototype.update = function(time) {
     // TODO: Implement your player's update by state
     case "right":
       this.timer += time;
-      this.x += 2.1;
-      if(this.timer > MS_PER_FRAME) {
-        this.timer = 0;
-        this.frame += 1;
-        if(this.frame > 3) {
-          this.frame = 0;
-          this.state = "default";
+      var temp = this.x + 2.1;
+      if(temp > 760) {
+        this.x = 0;
+        this.y = 240;
+        this.position = 0;
+        this.score += 100;
+        this.frame = 0;
+        this.state = "idle";
+      } else {
+        this.x += 2.1;
+        if(this.timer > MS_PER_FRAME) {
+          this.timer = 0;
+          this.frame += 1;
+          if(this.frame > 3) {
+            this.position++;
+            this.x = 78 * this.position;
+            this.frame = 0;
+            this.state = "idle";
+          }
         }
       }
       break;
     case "left":
       this.timer += time;
-      this.x -= 2.1;
-      if(this.timer > MS_PER_FRAME) {
-        this.timer = 0;
-        this.frame += 1;
-        if(this.frame > 3) {
-          this.frame = 0;
-          this.state = "default";
+      var temp = this.x - 2.1;
+      if(temp < 0) {
+        this.x = 0;
+        this.frame = 0;
+        this.state = "idle";
+        this.position = 0;
+      } else {
+        this.x -= 2.1;
+        if(this.timer > MS_PER_FRAME) {
+          this.timer = 0;
+          this.frame += 1;
+          if(this.frame > 3) {
+            this.position --;
+            this.x = 78 * this.position;
+            this.frame = 0;
+            this.state = "idle";
+          }
         }
       }
       break;
     case "down":
       this.timer += time;
-      this.y += 2;
-      if(this.timer > MS_PER_FRAME) {
-        this.timer = 0;
-        this.frame += 1;
-        if(this.frame > 3) {
-          this.frame = 0;
-          this.state = "default";
+      var temp = this.y + 2;
+      if(temp < 480) {
+        this.y += 2;
+        if(this.timer > MS_PER_FRAME) {
+          this.timer = 0;
+          this.frame += 1;
+          if(this.frame > 3) {
+            this.frame = 0;
+            this.state = "idle";
+          }
         }
       }
       break;
     case "up":
       this.timer += time;
-      this.y -= 2;
-      if(this.timer > MS_PER_FRAME) {
-        this.timer = 0;
-        this.frame += 1;
-        if(this.frame > 3) {
-          this.frame = 0;
-          this.state = "default";
+      var temp = this.y - 2;
+      if(temp > 0) {
+        this.y -= 2;
+        if(this.timer > MS_PER_FRAME) {
+          this.timer = 0;
+          this.frame += 1;
+          if(this.frame > 3) {
+            this.frame = 0;
+            this.state = "idle";
+          }
         }
       }
       break;
-    default:
-      this.state = "idle";
   }
 }
 
@@ -457,7 +528,7 @@ Player.prototype.render = function(time, ctx) {
         // image
         this.spritesheet,
         // source rectangle
-        this.frame * 64, 64, this.width, this.height,
+        this.frame * 64, 70, 64, 64,
         // destination rectangle
         this.x, this.y, this.width, this.height
       );
@@ -471,7 +542,7 @@ Player.prototype.render = function(time, ctx) {
         //image
         this.spritesheet,
         //source rectangle
-        this.frame * 64, 0, this.width, this.height,
+        this.frame * 64, 0, 64, 64,
         //destination rectangle
         this.x, this.y, this.width, this.height
       );

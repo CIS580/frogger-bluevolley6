@@ -11,10 +11,11 @@ module.exports = exports = Car;
 function Car(position) {
   this.x = position.x;
   this.y = position.y;
-  this.width  = 75;
-  this.height = 100;
+  this.width  = 60;
+  this.height = 80;
   this.spritesheet  = new Image();
   this.spritesheet.src ='assets/cars_racer.svg';
+  this.speed = 0;
 }
 
 /**
@@ -24,7 +25,7 @@ Car.prototype.update = function() {
   if(this.y < 0) {
     this.y = 500;
   } else {
-    this.y -= 1;
+    this.y -= (1 + this.speed);
   }
 }
 
@@ -37,7 +38,7 @@ Car.prototype.render = function(ctx) {
     //image
     this.spritesheet,
     //source rectangle
-    0, 0, 350, 220,
+    0, 0, 220, 450,
     //destination rectangle
     this.x, this.y, this.width, this.height
   );

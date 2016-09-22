@@ -13,40 +13,44 @@ var game = new Game(canvas, update, render);
 var player = new Player({x: 0, y: 240});
 var background = new Image();
 background.src = 'assets/background.png';
+var lives = 3;
 var log = [];
 var car = [];
 for(var i=0; i < 3; i++) {
   log.push(new Log({
-    x: 470,
-    y: 100 + 200*i
+    x: 460,
+    y: 100 + 250*i
   }));
   log.push(new Log2({
-    x: 550,
+    x: 540,
     y: 0 + 150*i
   }));
   log.push(new Log({
-    x: 630,
+    x: 620,
     y: 100 + 200*i
   }));
 }
 for(var i=0; i < 2; i++) {
   car.push(new Car({
     x: 80,
-    y: 100 + 300*i
-  }));
-  car.push(new Car({
-    x: 160,
-    y: 50 + 350*i
+    y: 0 + 320*i
   }));
   car.push(new Car({
     x: 240,
-    y: 150 + 350*i
-  }));
-  car.push(new Car({
-    x: 320,
-    y: 200 + 300*i
+    y: 0 + 320*i
   }));
 }
+
+car.push(new Car({
+  x: 160,
+  y: 250
+}));
+
+car.push(new Car({
+  x: 315,
+  y: 300
+}));
+
 window.onkeydown = function(event) {
   event.preventDefault();
   console.log(event);
@@ -111,7 +115,28 @@ function update(elapsedTime) {
   // TODO: Update the game objects
   log.forEach(function(log) { log.update();});
   car.forEach(function(car) { car.update();});
-  checkForCollision();
+  for(var i = 0; i < car.length; i ++){
+    car[i].speed = player.score/100;
+  }
+  for(var i = 0; i < log.length; i++){
+    log[i].speed = player.score/100;
+  }
+  if(player.x > 70 && player.x < 375) {
+    car.forEach(checkForCarCrash);
+  } else if (player.x > 455 && player.x < 680) {
+    var onLog = log.some(checkOnLog);
+    if(!onLog) {
+      player.x = 0;
+      player.y = 240;
+      player.frame = 0;
+      player.state = "idle";
+      player.position = 0;
+      lives --;
+      if(lives == 0) {
+        game.gameOver = true;
+      }
+    }
+  }
 }
 
 /**
@@ -126,17 +151,41 @@ function render(elapsedTime, ctx) {
   log.forEach(function(log){log.render(ctx);});
   car.forEach(function(car){car.render(ctx);});
   player.render(elapsedTime, ctx);
+  ctx.fillStyle = "yellow";
+  ctx.font = "bold 16px Arial";
+  ctx.fillText("Score: " + player.score, 0, 15);
+  ctx.fillStyle = "yellow";
+  ctx.font = "bold 16px Arial";
+  ctx.fillText("Lives: " + lives, 1, 30);
+  if(game.gameOver) {
+      ctx.fillStyle = "red";
+      ctx.font = "bold 32px Arial";
+      ctx.fillText("Game Over", 760/2 - 90, 480/2);
+  }
 }
 
-function checkForCollision() {
-  var collides;
-  if(player.x > 70 && player.x < 400) { //in street
-    car.forEach(function(entry) {
-      
-    });
-  }
+function checkForCarCrash(car) {
+  var collides = !(player.x + player.width < car.x ||
+                  player.x > car.x + car.width ||
+                  player.y + player.height < car.y ||
+                  player.y > car.y + car.height);
   if(collides) {
     player.x = 0;
     player.y = 240;
+    player.frame = 0;
+    player.state = "idle";
+    player.position = 0;
+    lives --;
+    if(lives == 0) {
+      game.gameOver = true;
+    }
   }
+}
+
+function checkOnLog(log) {
+  var collides = !(player.x + player.width < log.x ||
+                  player.x > log.x + log.width ||
+                  player.y + player.height < log.y ||
+                  player.y > log.y + log.height);
+  return collides;
 }

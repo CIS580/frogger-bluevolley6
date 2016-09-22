@@ -27,6 +27,7 @@ function Game(screen, updateFunction, renderFunction) {
   // Start the game loop
   this.oldTime = performance.now();
   this.paused = false;
+  this.gameOver = false;
 }
 
 /**
@@ -45,12 +46,14 @@ Game.prototype.pause = function(flag) {
  */
 Game.prototype.loop = function(newTime) {
   var game = this;
-  var elapsedTime = newTime - this.oldTime;
-  this.oldTime = newTime;
+  if(this.gameOver == false) {
+    var elapsedTime = newTime - this.oldTime;
+    this.oldTime = newTime;
 
-  if(!this.paused) this.update(elapsedTime);
-  this.render(elapsedTime, this.frontCtx);
+    if(!this.paused) this.update(elapsedTime);
+    this.render(elapsedTime, this.frontCtx);
 
-  // Flip the back buffer
-  this.frontCtx.drawImage(this.backBuffer, 0, 0);
+    // Flip the back buffer
+    this.frontCtx.drawImage(this.backBuffer, 0, 0);
+  }
 }
